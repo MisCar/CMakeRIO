@@ -10,7 +10,7 @@ from json import loads
 from zipfile import ZipFile
 
 NI_LIBRARIES = ["visa", "runtime", "netcomm", "chipobject"]
-WPILIB_LIBRARIES = ["wpilibc", "wpiutil", "wpimath", "ntcore", "cscore", "hal"]
+WPILIB_LIBRARIES = ["wpilibc", "wpiutil", "wpimath", "ntcore", "cscore", "hal","cameraserver"]
 
 NI_VERSION = "2020.10.1"
 WPILIB_VERSION = "2021.3.1"
