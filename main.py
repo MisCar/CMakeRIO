@@ -358,7 +358,7 @@ def generate_header_with_all_includes(path: str):
                 root = root[root.index("/") + 1 :]
 
         includes += map(
-            lambda f: join(root, f),
+            lambda f: join(root, f.replace("\\", "/")),
             filter(
                 lambda f: f.endswith(".h")
                 and not (f == "MovingAverage.h" and root == "ctre/phoenix/signals")
