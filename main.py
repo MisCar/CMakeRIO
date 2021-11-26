@@ -1,307 +1,44 @@
 from os import walk, listdir
-from os.path import join, expanduser, isdir, join, relpath, exists, abspath
+from os.path import (
+    join,
+    expanduser,
+    isdir,
+    join,
+    relpath,
+    exists,
+    abspath,
+    realpath,
+    dirname,
+)
 from sys import argv
 from dataclasses import dataclass
 from io import BytesIO
 from typing import Union, List
 from urllib.error import HTTPError
 from urllib.request import urlopen
-from json import loads
+from json import load
 from zipfile import ZipFile
 
 NI_LIBRARIES = ["visa", "runtime", "netcomm", "chipobject"]
-WPILIB_LIBRARIES = ["wpilibc", "wpiutil", "wpimath", "ntcore", "cscore", "hal","cameraserver"]
+WPILIB_LIBRARIES = [
+    "wpilibc",
+    "wpiutil",
+    "wpimath",
+    "ntcore",
+    "cscore",
+    "hal",
+    "cameraserver",
+]
 
-NI_VERSION = "2020.10.1"
-WPILIB_VERSION = "2021.3.1"
+NI_VERSION = "2022.2.3"
+WPILIB_VERSION = "2022.1.1-beta-2"
 
 INSTALL_ROOT = join(expanduser("~"), ".wpilib-headers")
 
+SCRIPT_DIRECTORY = dirname(realpath(__file__))
 VENDORDEPS = [
-    {
-        "name": "CTRE-Phoenix",
-        "version": "5.19.4",
-        "fileName": "Phoenix.json",
-        "uuid": "ab676553-b602-441f-a38d-f1296eff6537",
-        "mavenUrls": ["https://devsite.ctr-electronics.com/maven/release/"],
-        "jsonUrl": "https://devsite.ctr-electronics.com/maven/release/com/ctre/phoenix/Phoenix-latest.json",
-        "javaDependencies": [
-            {
-                "groupId": "com.ctre.phoenix",
-                "artifactId": "api-java",
-                "version": "5.19.4",
-            },
-            {
-                "groupId": "com.ctre.phoenix",
-                "artifactId": "wpiapi-java",
-                "version": "5.19.4",
-            },
-        ],
-        "jniDependencies": [
-            {
-                "groupId": "com.ctre.phoenix",
-                "artifactId": "cci",
-                "version": "5.19.4",
-                "isJar": False,
-                "skipInvalidPlatforms": True,
-                "validPlatforms": ["linuxathena"],
-            },
-            {
-                "groupId": "com.ctre.phoenix.sim",
-                "artifactId": "cci-sim",
-                "version": "5.19.4",
-                "isJar": False,
-                "skipInvalidPlatforms": True,
-                "validPlatforms": ["windowsx86-64", "linuxx86-64", "osxx86-64"],
-            },
-            {
-                "groupId": "com.ctre.phoenix.sim",
-                "artifactId": "simTalonSRX",
-                "version": "5.19.4",
-                "isJar": False,
-                "skipInvalidPlatforms": True,
-                "validPlatforms": ["windowsx86-64", "linuxx86-64", "osxx86-64"],
-            },
-            {
-                "groupId": "com.ctre.phoenix.sim",
-                "artifactId": "simVictorSPX",
-                "version": "5.19.4",
-                "isJar": False,
-                "skipInvalidPlatforms": True,
-                "validPlatforms": ["windowsx86-64", "linuxx86-64", "osxx86-64"],
-            },
-        ],
-        "cppDependencies": [
-            {
-                "groupId": "com.ctre.phoenix",
-                "artifactId": "wpiapi-cpp",
-                "version": "5.19.4",
-                "libName": "CTRE_Phoenix_WPI",
-                "headerClassifier": "headers",
-                "sharedLibrary": False,
-                "skipInvalidPlatforms": True,
-                "binaryPlatforms": [
-                    "linuxathena",
-                    "windowsx86-64",
-                    "linuxx86-64",
-                    "osxx86-64",
-                ],
-            },
-            {
-                "groupId": "com.ctre.phoenix",
-                "artifactId": "api-cpp",
-                "version": "5.19.4",
-                "libName": "CTRE_Phoenix",
-                "headerClassifier": "headers",
-                "sharedLibrary": False,
-                "skipInvalidPlatforms": True,
-                "binaryPlatforms": [
-                    "linuxathena",
-                    "windowsx86-64",
-                    "linuxx86-64",
-                    "osxx86-64",
-                ],
-            },
-            {
-                "groupId": "com.ctre.phoenix",
-                "artifactId": "cci",
-                "version": "5.19.4",
-                "libName": "CTRE_PhoenixCCI",
-                "headerClassifier": "headers",
-                "sharedLibrary": False,
-                "skipInvalidPlatforms": True,
-                "binaryPlatforms": ["linuxathena"],
-            },
-            {
-                "groupId": "com.ctre.phoenix.sim",
-                "artifactId": "cci-sim",
-                "version": "5.19.4",
-                "libName": "CTRE_PhoenixCCISim",
-                "headerClassifier": "headers",
-                "sharedLibrary": False,
-                "skipInvalidPlatforms": True,
-                "binaryPlatforms": ["windowsx86-64", "linuxx86-64", "osxx86-64"],
-            },
-            {
-                "groupId": "com.ctre.phoenix",
-                "artifactId": "diagnostics",
-                "version": "5.19.4",
-                "libName": "CTRE_PhoenixDiagnostics",
-                "headerClassifier": "headers",
-                "sharedLibrary": False,
-                "skipInvalidPlatforms": True,
-                "binaryPlatforms": [
-                    "linuxathena",
-                    "windowsx86-64",
-                    "linuxx86-64",
-                    "osxx86-64",
-                ],
-            },
-            {
-                "groupId": "com.ctre.phoenix",
-                "artifactId": "canutils",
-                "version": "5.19.4",
-                "libName": "CTRE_PhoenixCanutils",
-                "headerClassifier": "headers",
-                "sharedLibrary": False,
-                "skipInvalidPlatforms": True,
-                "binaryPlatforms": ["windowsx86-64", "linuxx86-64", "osxx86-64"],
-            },
-            {
-                "groupId": "com.ctre.phoenix",
-                "artifactId": "platform-sim",
-                "version": "5.19.4",
-                "libName": "CTRE_PhoenixPlatform",
-                "headerClassifier": "headers",
-                "sharedLibrary": False,
-                "skipInvalidPlatforms": True,
-                "binaryPlatforms": ["windowsx86-64", "linuxx86-64", "osxx86-64"],
-            },
-            {
-                "groupId": "com.ctre.phoenix",
-                "artifactId": "core",
-                "version": "5.19.4",
-                "libName": "CTRE_PhoenixCore",
-                "headerClassifier": "headers",
-                "sharedLibrary": False,
-                "skipInvalidPlatforms": True,
-                "binaryPlatforms": [
-                    "linuxathena",
-                    "windowsx86-64",
-                    "linuxx86-64",
-                    "osxx86-64",
-                ],
-            },
-            {
-                "groupId": "com.ctre.phoenix.sim",
-                "artifactId": "simTalonSRX",
-                "version": "5.19.4",
-                "libName": "CTRE_SimTalonSRX",
-                "headerClassifier": "headers",
-                "sharedLibrary": True,
-                "skipInvalidPlatforms": True,
-                "binaryPlatforms": ["windowsx86-64", "linuxx86-64", "osxx86-64"],
-            },
-            {
-                "groupId": "com.ctre.phoenix.sim",
-                "artifactId": "simVictorSPX",
-                "version": "5.19.4",
-                "libName": "CTRE_SimVictorSPX",
-                "headerClassifier": "headers",
-                "sharedLibrary": True,
-                "skipInvalidPlatforms": True,
-                "binaryPlatforms": ["windowsx86-64", "linuxx86-64", "osxx86-64"],
-            },
-        ],
-    },
-    {
-        "name": "REVRobotics",
-        "version": "1.5.4",
-        "cppDependencies": [
-            {
-                "artifactId": "SparkMax-cpp",
-                "binaryPlatforms": [
-                    "windowsx86-64",
-                    "windowsx86",
-                    "linuxaarch64bionic",
-                    "linuxx86-64",
-                    "linuxathena",
-                    "linuxraspbian",
-                    "osxx86-64",
-                ],
-                "groupId": "com.revrobotics.frc",
-                "headerClassifier": "headers",
-                "libName": "SparkMax",
-                "sharedLibrary": False,
-                "skipInvalidPlatforms": True,
-                "version": "1.5.4",
-            },
-            {
-                "artifactId": "SparkMax-driver",
-                "binaryPlatforms": [
-                    "windowsx86-64",
-                    "windowsx86",
-                    "linuxaarch64bionic",
-                    "linuxx86-64",
-                    "linuxathena",
-                    "linuxraspbian",
-                    "osxx86-64",
-                ],
-                "groupId": "com.revrobotics.frc",
-                "headerClassifier": "headers",
-                "libName": "SparkMaxDriver",
-                "sharedLibrary": False,
-                "skipInvalidPlatforms": True,
-                "version": "1.5.4",
-            },
-        ],
-        "fileName": "REVRobotics.json",
-        "javaDependencies": [
-            {
-                "artifactId": "SparkMax-java",
-                "groupId": "com.revrobotics.frc",
-                "version": "1.5.4",
-            }
-        ],
-        "jniDependencies": [
-            {
-                "artifactId": "SparkMax-driver",
-                "groupId": "com.revrobotics.frc",
-                "isJar": False,
-                "skipInvalidPlatforms": True,
-                "validPlatforms": [
-                    "windowsx86-64",
-                    "windowsx86",
-                    "linuxaarch64bionic",
-                    "linuxx86-64",
-                    "linuxathena",
-                    "linuxraspbian",
-                    "osxx86-64",
-                ],
-                "version": "1.5.4",
-            }
-        ],
-        "jsonUrl": "http://www.revrobotics.com/content/sw/max/sdk/REVRobotics.json",
-        "mavenUrls": ["http://www.revrobotics.com/content/sw/max/sdk/maven/"],
-        "uuid": "3f48eb8c-50fe-43a6-9cb7-44c86353c4cb",
-    },
-    {
-        "name": "WPILib-New-Commands",
-        "version": "2020.0.0",
-        "fileName": "WPILibNewCommands.json",
-        "uuid": "111e20f7-815e-48f8-9dd6-e675ce75b266",
-        "mavenUrls": [],
-        "jsonUrl": "",
-        "javaDependencies": [
-            {
-                "groupId": "edu.wpi.first.wpilibNewCommands",
-                "artifactId": "wpilibNewCommands-java",
-                "version": "wpilib",
-            }
-        ],
-        "jniDependencies": [],
-        "cppDependencies": [
-            {
-                "groupId": "edu.wpi.first.wpilibNewCommands",
-                "artifactId": "wpilibNewCommands-cpp",
-                "version": "wpilib",
-                "libName": "wpilibNewCommands",
-                "headerClassifier": "headers",
-                "sourcesClassifier": "sources",
-                "sharedLibrary": True,
-                "skipInvalidPlatforms": True,
-                "binaryPlatforms": [
-                    "linuxathena",
-                    "linuxraspbian",
-                    "linuxaarch64bionic",
-                    "windowsx86-64",
-                    "windowsx86",
-                    "linuxx86-64",
-                    "osxx86-64",
-                ],
-            }
-        ],
-    },
+    load(open(join(SCRIPT_DIRECTORY, "vendordeps", f), "r"))
+    for f in listdir(join(SCRIPT_DIRECTORY, "vendordeps"))
 ]
 
 
